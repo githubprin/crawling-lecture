@@ -1,11 +1,24 @@
 import requests 
 from bs4 import BeautifulSoup
+from pprint import pprint 
 
 def crawl_press_names_and_codes():
     """Make the dict that have press code as key, and press name as value. Crawl from https://media.naver.com/channel/settings. 
     """
     url = 'https://media.naver.com/channel/settings'
     code2name = {}
+    
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        new_list = soup.find_all('li', {'class': 'ca_item _channel_item'})
+        
+        for news in new_list:
+            press_code = news['data-office']   
+            press_name = news.find('div', {'class': 'ca_name'}).text
+            code2name[press_code] = press_name
     
     return code2name 
 
@@ -16,9 +29,28 @@ def crawl_journalist_info_pages(code2name):
     Crawl from https://media.naver.com/journalists/. 
     """
 
-    res = {}
+    press_codes = list(code2name.keys())
+    for press_code in press_codes:
+        url = f'https://media.naver.com/journalists/whole?officeId={press_code}'
+        
+        response = requests.get(url)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            press_lists = soup.find_all('li', {'class': 'journalist_list_content_item'})
+            
+            press_info = []
+            for press_list in press_lists:
+                a = press_list.find('a', {'class': 'journalist_list_content_name'})
+                name = a.text
+                link = a['href']
+                journalist_tuple = (name, link)
+                press_info.append(journalist_tuple)
+                
+            code2name[press_code] = (code2name[press_code], press_info)
     
-    return res 
+    return code2name 
 
 class Journalist:
     def __init__(self, name, press_code, 
@@ -41,18 +73,27 @@ class Journalist:
 def crawl_journalist_info(link):
     """Make a Journalist class instance using the information in the given link. 
     """
-    pass 
-
-
-
+    
+    response = requests.get(link)
+    
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, 'html.parser') 
+        
+        reporter_info = soup.find('div', {'class': 'media_reporter_basic_text'}).text
+        
+        # name = reporter_info.find('h2', {'class': 'media_reporter_basic_name'})
+        # print(name)
+        
+        press_code = reporter_info.find('a')
+        press_code = press_code['href']
+        print(press_code)
 
 if __name__ == '__main__':
     code2name = crawl_press_names_and_codes()
     code2info = crawl_journalist_info_pages(code2name)
+    # pprint(code2info['081'])
     for code, (press_name, journalist_list) in code2info.items():
         for journalist_name, link in journalist_list:
-            j = crawl_journalist_info(link)
-            assert j.name = journalist_name
-
-    
-    
+            # j = crawl_journalist_info(link)
+            # assert j.name == journalist_name
+            crawl_journalist_info(link)
