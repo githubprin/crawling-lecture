@@ -78,59 +78,6 @@ def crawl_journalist_info(link):
     """Make a Journalist class instance using the information in the given link. 
     """
     
-    response = requests.get(link)
-    
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, 'html.parser') 
-        
-        basic_info = soup.find('div', {'class': 'media_reporter_basic_text'})
-        
-        name = basic_info.find('h2', {'class': 'media_reporter_basic_name'}).text
-        
-        a = basic_info.find('a')
-        press_code = a['href'][-3:]
-        
-        ##################### 
-        career_list = []
-        award_items = soup.find('div', {'class': 'media_reporter_profile_award'})
-    
-        if award_items is not None : 
-            award_items = award_items.find_all('ul', {'class': 'media_reporter_award_name'})
-            for award_item in award_items:
-                career_lists = award_item.find('li').text.strip()
-                career_list.append(career_lists)
-                
-        # graduated
-        #####################
-        
-        # no_of_subscribers = soup.find('em', {'class': 'media_reporter_popularity_subscribenum _journalist_subscribe_count _txt'}).text
-
-        no_of_subscribers = requests.get(f'https://media.naver.com/myfeed/getFeedCount?channelKeys=JOURNALIST_{link.split("/")[-1]}')
-        
-        if no_of_subscribers.status_code == 200:
-            no_of_subscribers = json.loads(no_of_subscribers.text)['result'][0]['count']
-        else: 
-            no_of_subscribers = 0        
-                
-        import code
-        code.interact(local = locals())
-        
-        print(link)
-        print(no_of_subscribers)
-        
-        # group_barchart = soup.find('dl', {'class' : 'group_barchart'})
-        # age_statistics = group_barchart.find_all('div', {'class' : 'bar'})
-        # if age_statistics is not None : 
-        #     for age_statistic in age_statistics:
-        #         subscriber_age_statistics = age_statistic.get('style').split(": ")
-            
-        # print(subscriber_age_statistics)
-        
-        
-        
-        
-        
-
 if __name__ == '__main__':
     code2info_pickle = 'code2info.pickle'
     
