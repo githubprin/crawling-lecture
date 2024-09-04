@@ -1,6 +1,9 @@
 import requests 
 from bs4 import BeautifulSoup
 from pprint import pprint 
+import os
+import pickle
+from time import time
 
 def crawl_press_names_and_codes():
     """Make the dict that have press code as key, and press name as value. Crawl from https://media.naver.com/channel/settings. 
@@ -79,16 +82,39 @@ def crawl_journalist_info(link):
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser') 
         
-        reporter_info = soup.find('div', {'class': 'media_reporter_basic_text'}).text
+        basic_info = soup.find('div', {'class': 'media_reporter_basic_text'})
         
-        # name = reporter_info.find('h2', {'class': 'media_reporter_basic_name'})
-        # print(name)
+        name = basic_info.find('h2', {'class': 'media_reporter_basic_name'}).text
         
-        press_code = reporter_info.find('a')
-        press_code = press_code['href']
-        print(press_code)
+        a = basic_info.find('a')
+        press_code = a['href'][-3:]
+        
+        career_list = []
+        award_items = soup.find('div', {'class': 'media_reporter_profile_award'})
+        
+        if award_items is not None : 
+            award_items = award_items.find_all('ul', {'class': 'media_reporter_award_name'})
+            for award_item in award_items:
+                career_lists = award_item.find('li').text.strip()
+                career_list.append(career_lists)
+        
 
 if __name__ == '__main__':
+    code2info_pickle = 'code2info.pickle'
+    
+    if code2info_pickle in os.listdir():
+        begin = time()
+        code2info = pickle.load(open(code2info_pickle, 'rb'))
+        end = time()
+        print(f'{end - begin} sec passed for unpickling')
+    else:
+        begin = time()
+        code2name = crawl_press_names_and_codes()
+        code2info = crawl_journalist_info_pages(code2name)
+        pickle.dump(code2info, open(code2info_pickle, 'wb+'))
+        end = time()
+        print(f'{end - begin} sec passed for execution and pickling')
+    
     code2name = crawl_press_names_and_codes()
     code2info = crawl_journalist_info_pages(code2name)
     # pprint(code2info['081'])
